@@ -1,0 +1,26 @@
+{
+  "name": "dawn-transfer",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.28.2",
+  "dependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^25.3.0",
+    "better-sqlite3": "^12.6.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "file-type": "^21.3.0",
+    "multer": "^2.0.2",
+    "sqlite3": "^5.1.7",
+    "typescript": "^5.9.3"
+  }
+}
