@@ -7,12 +7,14 @@ import { randomUUID } from "crypto";
 import { AccessCode, AccessLink, DawnFile, db, initDb } from "./db";
 import path from "path";
 import rateLimit from "express-rate-limit";
+import cors from "cors";
 
 if (!fs.existsSync(config.dataPath)) fs.mkdirSync(config.dataPath);
 if (!fs.existsSync(config.dataPath + "/files"))
   fs.mkdirSync(config.dataPath + "/files");
 
 const app = express();
+app.use(cors());
 export const upload = multer({
   dest: "uploads/",
   limits: { fileSize: config.maxFileSize, files: 1 },
@@ -129,6 +131,58 @@ app.get("/download", (req, res) => {
   return res.download(filePath, file.file_name);
 });
 
+app.get("/files", (req, res) => {
+  const queryCode = (req.query.code ?? req.query.link)?.toString();
+
+  if (!queryCode) {
+    return res.status(400).json({ message: "Missing access code or link" });
+  }
+
+  const access =
+    db
+      .prepare<
+        [string],
+        AccessCode
+      >("SELECT * FROM access_codes WHERE code = ?")
+      .get(queryCode) ??
+    db
+      .prepare<
+        [string],
+        AccessLink
+      >("SELECT * FROM access_links WHERE code = ?")
+      .get(queryCode);
+
+  if (!access) {
+    return res.status(404).json({ message: "Invalid code" });
+  }
+
+  const accessAge = Date.now() - new Date(access.added_at).getTime();
+
+  if (accessAge > access.expires) {
+    db.prepare("DELETE FROM access_codes WHERE code = ?").run(queryCode);
+    db.prepare("DELETE FROM access_links WHERE code = ?").run(queryCode);
+    return res.status(400).json({ message: "Access expired" });
+  }
+
+  const file = db
+    .prepare<[string], DawnFile>("SELECT * FROM files WHERE id = ?")
+    .get(access.file);
+
+  if (!file) {
+    return res.status(500).json({ message: "File missing" });
+  }
+
+  const filePath = path.join(config.dataPath, "files", file.id);
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(500).json({ message: "File missing on disk" });
+  }
+
+  return res.status(200).send({
+    file,
+  });
+});
+
 app.post("/files/:file/link", (req, res) => {
   const file = db
     .prepare<[string], DawnFile>("SELECT * FROM files WHERE id = ?")
@@ -137,8 +191,6 @@ app.post("/files/:file/link", (req, res) => {
   if (!file) {
     return res.status(404).json({ message: "Invalid file" });
   }
-
-  // db.prepare("DELETE FROM access_codes WHERE file = ?").run(file.id);
 
   const now = new Date().toISOString();
 
