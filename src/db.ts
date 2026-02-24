@@ -6,9 +6,6 @@ import config from "./config";
 let dbPath = config.dataPath + "/data.db";
 console.log(`Path is ${dbPath}`);
 
-if (!existsSync(path.dirname(dbPath)))
-  fs.mkdirSync(dbPath, { recursive: true });
-
 export const db = new Database(dbPath);
 
 // db.pragma("journal_mode = WAL");
