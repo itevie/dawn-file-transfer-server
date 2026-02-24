@@ -6,6 +6,8 @@ import config from "./config";
 let dbPath = config.dataPath + "/data.db";
 console.log(`Path is ${dbPath}`);
 
+if (!fs.existsSync(config.dataPath)) fs.mkdirSync(config.dataPath);
+
 export const db = new Database(dbPath);
 
 // db.pragma("journal_mode = WAL");
